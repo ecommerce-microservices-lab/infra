@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f compose.yml -o k8s-manifests/
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    io.kompose.service: product-service
+  name: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: product-service
+  template:
+    metadata:
+      labels:
+        io.kompose.service: product-service
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - env:
+            - name: SPRING_CONFIG_IMPORT
+              value: optional:configserver:http://cloud-config:9296/
+            - name: EUREKA_INSTANCE_HOSTNAME
+              value: product-service
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-root-password
+          envFrom:
+            - configMapRef:
+                name: common-environment-variables
+          image: ${ACR_NAME}.azurecr.io/product-service:${ENV}
+          imagePullPolicy: Always
+          name: product-service
+          ports:
+            - containerPort: 8500
+              protocol: TCP
+          resources:
+            requests:
+              memory: "384Mi"
+              cpu: "250m"
+              ephemeral-storage: "512Mi"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+              ephemeral-storage: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /product-service/actuator/health
+              port: 8500
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /product-service/actuator/health
+              port: 8500
+            initialDelaySeconds: 150
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f compose.yml -o k8s-manifests/
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    io.kompose.service: product-service
+  name: product-service
+spec:
+  ports:
+    - name: "8500"
+      port: 8500
+      targetPort: 8500
+  selector:
+    io.kompose.service: product-service
