@@ -7,7 +7,7 @@ metadata:
   labels:
     io.kompose.service: api-gateway
   name: api-gateway
-  namespace: dev
+  namespace: stage
 spec:
   replicas: 1
   selector:
@@ -25,6 +25,8 @@ spec:
         - env:
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://cloud-config:9296/
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              value: http://service-discovery:8761/eureka/
             - name: EUREKA_INSTANCE_HOSTNAME
               value: api-gateway
           envFrom:
@@ -73,7 +75,7 @@ metadata:
   labels:
     io.kompose.service: api-gateway
   name: api-gateway
-  namespace: dev
+  namespace: stage
 spec:
   type: LoadBalancer
   ports:

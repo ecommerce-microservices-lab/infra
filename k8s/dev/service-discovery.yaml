@@ -5,50 +5,53 @@ metadata:
     kompose.cmd: kompose convert -f compose.yml -o k8s-manifests/
     kompose.version: 1.36.0 (ae2a39403)
   labels:
-    io.kompose.service: api-gateway
-  name: api-gateway
+    io.kompose.service: service-discovery
+  name: service-discovery
   namespace: dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: api-gateway
+      io.kompose.service: service-discovery
   template:
     metadata:
+      annotations:
+        kompose.cmd: kompose convert -f compose.yml -o k8s-manifests/
+        kompose.version: 1.36.0 (ae2a39403)
       labels:
-        io.kompose.service: api-gateway
+        io.kompose.service: service-discovery
     spec:
       automountServiceAccountToken: false
       imagePullSecrets:
         - name: acr-secret
       containers:
         - env:
-            - name: SPRING_CONFIG_IMPORT
-              value: optional:configserver:http://cloud-config:9296/
+            - name: EUREKA_INSTANCE
+              value: service-discovery
             - name: EUREKA_INSTANCE_HOSTNAME
-              value: api-gateway
+              value: service-discovery
           envFrom:
             - configMapRef:
                 name: common-environment-variables
-          image: microservicesacr5fa48984.azurecr.io/api-gateway:stage
+          image: microservicesacr5fa48984.azurecr.io/service-discovery:stage
           imagePullPolicy: Always
-          name: api-gateway
+          name: service-discovery
           ports:
-            - containerPort: 8080
+            - containerPort: 8761
               protocol: TCP
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: "256Mi"
+              cpu: "250m"
               ephemeral-storage: "512Mi"
             limits:
               memory: "512Mi"
-              cpu: "300m"
+              cpu: "500m"
               ephemeral-storage: "1Gi"
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8761
             initialDelaySeconds: 120
             periodSeconds: 15
             timeoutSeconds: 3
@@ -56,7 +59,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8761
             initialDelaySeconds: 150
             periodSeconds: 30
             timeoutSeconds: 3
@@ -67,18 +70,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.cmd: kompose convert -f compose.yml -o k8s-manifests/
-    kompose.version: 1.36.0 (ae2a39403)
   labels:
-    io.kompose.service: api-gateway
-  name: api-gateway
+    io.kompose.service: service-discovery
+  name: service-discovery
   namespace: dev
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
-    - name: "8080"
-      port: 8080
-      targetPort: 8080
+    - name: "8761"
+      port: 8761
+      targetPort: 8761
   selector:
-    io.kompose.service: api-gateway
+    io.kompose.service: service-discovery

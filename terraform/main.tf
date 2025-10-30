@@ -21,32 +21,9 @@ module "aks" {
 
   for_each = {
 
-    # dev = {
-    #   location     = "West US"
-    #   cluster_name = "${var.cluster_name}-dev"
-    #   dns_prefix   = "${var.dns_prefix}-dev"
-    #   node_count   = 2
-    #   vm_size      = "Standard_DS2_v2"
-    #   tags = {
-    #     environment = "dev"
-    #     project     = "microservices"
-    #   }
-    # }
-
-    stage = {
-      location     = "East US"
-      cluster_name = "${var.cluster_name}-stage"
-      dns_prefix   = "${var.dns_prefix}-stage"
-      node_count   = 2
-      vm_size      = "Standard_D2s_v3"
-      tags = {
-        environment = "stage"
-        project     = "microservices"
-      }
-    }
-
+    # Usando el cluster prod que ya existe
     prod = {
-      location     = "East US 2"
+      location     = "eastus2"
       cluster_name = "${var.cluster_name}-prod"
       dns_prefix   = "${var.dns_prefix}-prod"
       node_count   = 2
@@ -57,17 +34,30 @@ module "aks" {
       }
     }
 
-    devops = {
-      location     = "West US 2"
-      cluster_name = "${var.cluster_name}-devops"
-      dns_prefix   = "${var.dns_prefix}-devops"
-      node_count   = 2
-      vm_size      = "Standard_D2s_v3"
-      tags = {
-        environment = "devops"
-        project     = "microservices"
-      }
-    }
+    # TODO: Desplegar después de verificar que stage funciona
+    # prod = {
+    #   location     = "eastus2"
+    #   cluster_name = "${var.cluster_name}-prod"
+    #   dns_prefix   = "${var.dns_prefix}-prod"
+    #   node_count   = 2
+    #   vm_size      = "Standard_D2s_v3"
+    #   tags = {
+    #     environment = "prod"
+    #     project     = "microservices"
+    #   }
+    # }
+
+    # devops = {
+    #   location     = "eastus2"
+    #   cluster_name = "${var.cluster_name}-devops"
+    #   dns_prefix   = "${var.dns_prefix}-devops"
+    #   node_count   = 2
+    #   vm_size      = "Standard_D2s_v3"
+    #   tags = {
+    #     environment = "devops"
+    #     project     = "microservices"
+    #   }
+    # }
 
   }
   location            = each.value.location
@@ -86,11 +76,11 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
 }
 
-terraform {
-  backend "s3" {
-    bucket  = "microservices-state-bucket"
-    key     = "terraform/terraform.tfstate"
-    region  = "us-east-2"
-    encrypt = true
-  }
-}
+# terraform {
+#   backend "s3" {
+#     bucket  = "microservices-state-bucket"
+#     key     = "terraform/terraform.tfstate"
+#     region  = "us-east-2"
+#     encrypt = true
+#   }
+# }
