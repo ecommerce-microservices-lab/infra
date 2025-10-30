@@ -23,10 +23,11 @@ jobs:
           echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
 
-      - name: Set AWS Credentials
-        run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+      # AWS not used in this setup
+      # - name: Set AWS Credentials
+      #   run: |
+      #     echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+      #     echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
 
       - name: Terraform Init
         working-directory: terraform/
@@ -66,10 +67,10 @@ jobs:
 
       - name: Set Organization Secrets for multiple repositories
         run: |
-          gh secret set ACR_NAME --org microservices-final-project -b "${{ steps.tf_outputs.outputs.acr_name }}" --visibility "all"    
-          gh secret set ACR_USERNAME --org microservices-final-project -b "${{ steps.tf_outputs.outputs.acr_admin_username }}" --visibility "all" 
-          gh secret set ACR_PASSWORD --org microservices-final-project -b "${{ steps.tf_outputs.outputs.acr_admin_password }}" --visibility "all"       
-          gh secret set RESOURCE_GROUP --org microservices-final-project -b "${{ steps.tf_outputs.outputs.resource_group_name }}" --visibility "all"
+          gh secret set ACR_NAME --org ecommerce-microservices-lab -b "${{ steps.tf_outputs.outputs.acr_name }}" --visibility "all"
+          gh secret set ACR_USERNAME --org ecommerce-microservices-lab -b "${{ steps.tf_outputs.outputs.acr_admin_username }}" --visibility "all"
+          gh secret set ACR_PASSWORD --org ecommerce-microservices-lab -b "${{ steps.tf_outputs.outputs.acr_admin_password }}" --visibility "all"
+          gh secret set RESOURCE_GROUP --org ecommerce-microservices-lab -b "${{ steps.tf_outputs.outputs.resource_group_name }}" --visibility "all"
 
       # - name: Trigger workflows for multiple branches and wait for completion
       #   run: |
@@ -162,17 +163,16 @@ jobs:
       #         --attach-acr "${{ steps.tf_outputs.outputs.acr_name }}"
       #     done
 
-      - name: Add ConfigMap and Deploy Zipkin, Service Discovery, Redis Cache and Cloud Config
+      - name: Add ConfigMap and Deploy Zipkin, Service Discovery, Redis Cache and Cloud Config (per ENV)
         run: |
           export ACR_NAME="${{ steps.tf_outputs.outputs.acr_name }}"
 
           # Mapear cluster a entorno
           declare -A env_map=(
             ["microservices-cluster-prod"]="prod"
-            ["microservices-cluster-stage"]="stage"
           )
 
-          aks_names=("microservices-cluster-prod" "microservices-cluster-stage")
+          aks_names=("microservices-cluster-prod")
 
           for cluster_name in "${aks_names[@]}"; do
             echo "🔧 Switching context to cluster: $cluster_name"
@@ -185,24 +185,31 @@ jobs:
             export ENV="${env_map[$cluster_name]}"
             echo "🚀 Deploying initial services to: $cluster_name (ENV=$ENV)"
 
+            # Crear namespace si no existe
+            kubectl get ns "$ENV" >/dev/null 2>&1 || kubectl create ns "$ENV"
+
+            # Aplicar recursos core: si existe en carpeta del ENV, usarlo; si no, usar base
             for file in redis-cache.yaml configmap.yaml zipkin.yaml service-discovery.yaml cloud-config.yaml mysql-secret.yaml mysql.yaml; do
-              envsubst < "./k8s/base/$file" | kubectl apply -f -
+              if [ -f "infra/k8s/$ENV/$file" ]; then
+                envsubst < "infra/k8s/$ENV/$file" | kubectl apply -f -
+              elif [ -f "infra/k8s/base/$file" ]; then
+                envsubst < "infra/k8s/base/$file" | kubectl apply -f -
+              fi
             done
 
             echo "⏳ Esperando 60 segundos para que los servicios estén listos en $cluster_name..."
             sleep 60
           done
 
-      - name: Deploy Remaining Services
+      - name: Deploy Remaining Services (per ENV)
         run: |
           export ACR_NAME="${{ steps.tf_outputs.outputs.acr_name }}"
 
           declare -A env_map=(
             ["microservices-cluster-prod"]="prod"
-            ["microservices-cluster-stage"]="stage"
           )
 
-          aks_names=("microservices-cluster-prod" "microservices-cluster-stage")
+          aks_names=("microservices-cluster-prod")
 
           for cluster_name in "${aks_names[@]}"; do
             echo "🔧 Switching context to cluster: $cluster_name"
@@ -215,7 +222,8 @@ jobs:
             export ENV="${env_map[$cluster_name]}"
             echo "🚀 Deploying remaining services to: $cluster_name (ENV=$ENV)"
 
-            for file in ./k8s/base/*.yaml; do
+            # Aplicar todos los servicios propios del ENV, excluyendo core ya aplicados
+            for file in infra/k8s/$ENV/*.yaml; do
               base_file=$(basename "$file")
               if [[ "$base_file" != "redis-cache.yaml" && "$base_file" != "mysql-secret.yaml" && "$base_file" != "mysql.yaml" && "$base_file" != "configmap.yaml" && "$base_file" != "zipkin.yaml" && "$base_file" != "service-discovery.yaml" && "$base_file" != "cloud-config.yaml" ]]; then
                 envsubst < "$file" | kubectl apply -f -
@@ -224,7 +232,7 @@ jobs:
 
             echo "🌐 Esperando a que se asigne IP pública al API Gateway ($ENV)..."
             for i in {1..10}; do
-              IP=$(kubectl get svc api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+              IP=$(kubectl get svc api-gateway --namespace="$ENV" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
               if [[ -n "$IP" ]]; then
                 break
               fi
@@ -242,20 +250,21 @@ jobs:
             echo "$API_GATEWAY_IP_VAR=$IP" >> $GITHUB_ENV
           done
 
-      - name: Get devops AKS credentials
-        run: |
-          az aks get-credentials \
-            --resource-group "${{ steps.tf_outputs.outputs.resource_group_name }}" \
-            --name "microservices-cluster-devops" \
-            --overwrite-existing
+      # DevOps cluster/apps not used in this setup
+      # - name: Get devops AKS credentials
+      #   run: |
+      #     az aks get-credentials \
+      #       --resource-group "${{ steps.tf_outputs.outputs.resource_group_name }}" \
+      #       --name "microservices-cluster-devops" \
+      #       --overwrite-existing
 
-      - name: Generate Prometheus config
-        run: |
-          envsubst < ./k8s/devops/prometheus.template.yaml > ./k8s/devops/prometheus.configmap.yaml
+      # - name: Generate Prometheus config
+      #   run: |
+      #     envsubst < infra/k8s/devops/prometheus.template.yaml > infra/k8s/devops/prometheus.configmap.yaml
 
-      - name: Deploy devops apps
-        run: |
-          for file in sonarqube-data-pvc.yaml sonarqube.yaml prometheus.configmap.yaml prometheus.yaml grafana.yaml ; do
-            echo "Applying $file..."
-            kubectl apply -f "./k8s/devops/$file"
-          done
+      # - name: Deploy devops apps
+      #   run: |
+      #     for file in sonarqube-data-pvc.yaml sonarqube.yaml prometheus.configmap.yaml prometheus.yaml grafana.yaml ; do
+      #       echo "Applying $file..."
+      #       kubectl apply -f "infra/k8s/devops/$file"
+      #     done

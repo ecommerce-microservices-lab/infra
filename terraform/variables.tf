@@ -7,7 +7,7 @@ variable "cluster_name" {
 variable "location" {
   description = "The Azure region where the resources will be created."
   type = string
-  default = "East US"
+  default = "eastus2"
 }
 
 variable "resource_group_name" {

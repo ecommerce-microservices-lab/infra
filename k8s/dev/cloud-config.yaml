@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f compose.yml -o k8s-manifests/
+    kompose.version: 1.36.0 (ae2a39403)
+  labels:
+    io.kompose.service: cloud-config
+  name: cloud-config
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: cloud-config
+  template:
+    metadata:
+      labels:
+        io.kompose.service: cloud-config
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: acr-secret
+      containers:
+        - env:
+            - name: EUREKA_INSTANCE_HOSTNAME
+              value: cloud-config
+          envFrom:
+            - configMapRef:
+                name: common-environment-variables
+          image: microservicesacr5fa48984.azurecr.io/cloud-config:stage
+          imagePullPolicy: Always
+          name: cloud-config
+          ports:
+            - containerPort: 9296
+              protocol: TCP
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+              ephemeral-storage: "512Mi"
+            limits:
+              memory: "768Mi"
+              cpu: "300m"
+              ephemeral-storage: "1Gi"
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: cloud-config
+  name: cloud-config
+  namespace: dev
+spec:
+  ports:
+    - name: "9296"
+      port: 9296
+      targetPort: 9296
+  selector:
+    io.kompose.service: cloud-config
