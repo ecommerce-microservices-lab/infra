@@ -189,7 +189,8 @@ jobs:
             az aks get-credentials \
               --resource-group "${{ steps.tf_outputs.outputs.resource_group_name }}" \
               --name "$cluster_name" \
-              --overwrite-existing
+              --overwrite-existing \
+              --api-version 2025-04-01
 
             export ENV="${env_map[$cluster_name]}"
             echo "🚀 Deploying initial services to: $cluster_name (ENV=$ENV)"
@@ -227,7 +228,8 @@ jobs:
             az aks get-credentials \
               --resource-group "${{ steps.tf_outputs.outputs.resource_group_name }}" \
               --name "$cluster_name" \
-              --overwrite-existing
+              --overwrite-existing \
+              --api-version 2025-04-01
 
             export ENV="${env_map[$cluster_name]}"
             echo "🚀 Deploying remaining services to: $cluster_name (ENV=$ENV)"
