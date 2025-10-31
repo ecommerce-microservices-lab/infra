@@ -59,11 +59,12 @@ jobs:
             }
           auth-type: SERVICE_PRINCIPAL
 
-      - name: Fix Azure CLI version
+      - name: Clear Azure CLI MSAL cache
+        run: rm -f ~/.azure/msal_http_cache.bin
+
+      - name: Upgrade Azure CLI to latest
         run: |
-          # Install specific compatible version to avoid API version issues
-          pip3 install --user azure-cli==2.56.0 || true
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          az upgrade --yes
           az version
 
       - name: Install GitHub CLI
@@ -185,7 +186,6 @@ jobs:
           for cluster_name in "${aks_names[@]}"; do
             echo "🔧 Switching context to cluster: $cluster_name"
 
-            export PATH="$HOME/.local/bin:$PATH"
             az aks get-credentials \
               --resource-group "${{ steps.tf_outputs.outputs.resource_group_name }}" \
               --name "$cluster_name" \
@@ -223,7 +223,6 @@ jobs:
           for cluster_name in "${aks_names[@]}"; do
             echo "🔧 Switching context to cluster: $cluster_name"
 
-            export PATH="$HOME/.local/bin:$PATH"
             az aks get-credentials \
               --resource-group "${{ steps.tf_outputs.outputs.resource_group_name }}" \
               --name "$cluster_name" \
