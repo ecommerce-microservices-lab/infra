@@ -69,6 +69,36 @@ module "aks" {
   tags                = each.value.tags
 }
 
+# Módulo GKE para producción (GCP)
+module "gke_prod" {
+  source = "./modules/gke"
+
+  cluster_name = var.gke_cluster_name != "" ? var.gke_cluster_name : "${var.cluster_name}-gke-prod"
+  region       = var.gcp_region
+  zone         = var.gcp_zone
+
+  node_count = var.gke_node_count
+  min_node_count = var.gke_min_node_count
+  max_node_count = var.gke_max_node_count
+
+  machine_type = var.gke_machine_type
+  disk_size_gb = var.gke_disk_size_gb
+  preemptible  = var.gke_preemptible
+
+  node_service_account_email = var.gke_node_service_account_email
+
+  labels = {
+    environment = "prod"
+    project     = "microservices"
+    managed-by  = "terraform"
+  }
+
+  node_labels = {
+    environment = "prod"
+    project     = "microservices"
+  }
+}
+
 provider "kubernetes" {
   host                   = module.aks.host
   client_certificate     = base64decode(module.aks.client_certificate)
@@ -76,11 +106,13 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
 }
 
+# Backend remoto en S3 (descomentar después de crear el bucket)
 # terraform {
 #   backend "s3" {
-#     bucket  = "microservices-state-bucket"
-#     key     = "terraform/terraform.tfstate"
-#     region  = "us-east-2"
-#     encrypt = true
+#     bucket         = "microservices-state-bucket"
+#     key            = "terraform/azure/terraform.tfstate"
+#     region         = "us-east-2"
+#     encrypt        = true
+#     dynamodb_table = "terraform-state-lock"
 #   }
 # }

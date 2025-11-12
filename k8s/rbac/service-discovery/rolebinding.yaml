@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: service-discovery-rolebinding
+  namespace: prod
+  labels:
+    app: service-discovery
+    component: rbac
+    managed-by: terraform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-discovery-role
+subjects:
+  - kind: ServiceAccount
+    name: service-discovery
+    namespace: prod

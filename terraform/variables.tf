@@ -47,3 +47,77 @@ variable "aws_region" {
   type        = string
   default     = "us-east-2"
 }
+
+# Variables GCP
+variable "gcp_project_id" {
+  description = "GCP Project ID"
+  type        = string
+  default     = ""
+}
+
+variable "gcp_region" {
+  description = "GCP Region"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "gcp_zone" {
+  description = "GCP Zone"
+  type        = string
+  default     = "us-central1-a"
+}
+
+variable "gcp_credentials_path" {
+  description = "Path to GCP service account key JSON file"
+  type        = string
+  default     = ""
+}
+
+# Variables GKE
+variable "gke_cluster_name" {
+  description = "Name of the GKE cluster"
+  type        = string
+  default     = ""
+}
+
+variable "gke_node_count" {
+  description = "Number of nodes in the GKE cluster"
+  type        = number
+  default     = 2
+}
+
+variable "gke_min_node_count" {
+  description = "Minimum number of nodes for autoscaling"
+  type        = number
+  default     = 1
+}
+
+variable "gke_max_node_count" {
+  description = "Maximum number of nodes for autoscaling"
+  type        = number
+  default     = 3
+}
+
+variable "gke_machine_type" {
+  description = "Machine type for GKE nodes"
+  type        = string
+  default     = "e2-medium"
+}
+
+variable "gke_disk_size_gb" {
+  description = "Disk size in GB for GKE nodes"
+  type        = number
+  default     = 20
+}
+
+variable "gke_preemptible" {
+  description = "Use preemptible instances for GKE nodes"
+  type        = bool
+  default     = false
+}
+
+variable "gke_node_service_account_email" {
+  description = "Service account email for GKE nodes (leave empty to use default)"
+  type        = string
+  default     = ""
+}

@@ -15,7 +15,8 @@ spec:
       labels:
         io.kompose.service: proxy-client
     spec:
-      automountServiceAccountToken: false
+      serviceAccountName: proxy-client
+      automountServiceAccountToken: true
       imagePullSecrets:
         - name: acr-secret
       containers:
