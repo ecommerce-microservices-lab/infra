@@ -18,7 +18,8 @@ spec:
       labels:
         io.kompose.service: api-gateway
     spec:
-      automountServiceAccountToken: false
+      serviceAccountName: api-gateway
+      automountServiceAccountToken: true
       imagePullSecrets:
         - name: acr-secret
       containers:

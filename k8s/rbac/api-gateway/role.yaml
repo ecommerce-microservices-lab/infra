@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: api-gateway-role
+  namespace: prod
+  labels:
+    app: api-gateway
+    component: rbac
+    managed-by: terraform
+rules:
+  # Permisos para ConfigMaps (necesario para common-environment-variables)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+    resourceNames: ["common-environment-variables"]
+  
+  # Permisos para Secrets (necesario para mysql-secret y otros)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["mysql-secret", "acr-secret"]
+  
+  # Permisos para Services (necesario para service discovery)
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list"]
+

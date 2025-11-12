@@ -18,7 +18,8 @@ spec:
       labels:
         io.kompose.service: user-service
     spec:
-      automountServiceAccountToken: false
+      serviceAccountName: user-service
+      automountServiceAccountToken: true
       imagePullSecrets:
         - name: acr-secret
       containers:

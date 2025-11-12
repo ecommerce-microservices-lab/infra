@@ -9,7 +9,7 @@ metadata:
   name: order-service
   namespace: prod
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       io.kompose.service: order-service
@@ -18,7 +18,8 @@ spec:
       labels:
         io.kompose.service: order-service
     spec:
-      automountServiceAccountToken: false
+      serviceAccountName: order-service
+      automountServiceAccountToken: true
       imagePullSecrets:
         - name: acr-secret
       containers:
