@@ -69,3 +69,36 @@ output "acr_admin_password" {
   value       = azurerm_container_registry.microservices_acr.admin_password
   sensitive   = true
 }
+
+# Outputs GKE
+output "gke_cluster_name" {
+  description = "Name of the GKE cluster"
+  value       = module.gke_prod.cluster_name
+}
+
+output "gke_cluster_endpoint" {
+  description = "Endpoint for the GKE cluster"
+  value       = module.gke_prod.cluster_endpoint
+  sensitive   = true
+}
+
+output "gke_cluster_ca_certificate" {
+  description = "Base64 encoded public certificate for the GKE cluster"
+  value       = module.gke_prod.cluster_ca_certificate
+  sensitive   = true
+}
+
+output "gke_cluster_location" {
+  description = "Location of the GKE cluster"
+  value       = module.gke_prod.cluster_location
+}
+
+output "gke_vpc_name" {
+  description = "Name of the VPC"
+  value       = module.gke_prod.vpc_name
+}
+
+output "gke_subnet_name" {
+  description = "Name of the subnet"
+  value       = module.gke_prod.subnet_name
+}

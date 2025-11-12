@@ -9,7 +9,7 @@ metadata:
   name: service-discovery
   namespace: prod
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       io.kompose.service: service-discovery
@@ -21,7 +21,8 @@ spec:
       labels:
         io.kompose.service: service-discovery
     spec:
-      automountServiceAccountToken: false
+      serviceAccountName: service-discovery
+      automountServiceAccountToken: true
       imagePullSecrets:
         - name: acr-secret
       containers:

@@ -9,7 +9,7 @@ metadata:
   name: cloud-config
   namespace: prod
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       io.kompose.service: cloud-config
@@ -18,7 +18,8 @@ spec:
       labels:
         io.kompose.service: cloud-config
     spec:
-      automountServiceAccountToken: false
+      serviceAccountName: cloud-config
+      automountServiceAccountToken: true
       imagePullSecrets:
         - name: acr-secret
       containers:

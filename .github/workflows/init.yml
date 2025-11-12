@@ -59,6 +59,14 @@ jobs:
             }
           auth-type: SERVICE_PRINCIPAL
 
+      - name: Clear Azure CLI MSAL cache
+        run: rm -f ~/.azure/msal_http_cache.bin
+
+      - name: Upgrade Azure CLI to latest
+        run: |
+          az upgrade --yes
+          az version
+
       - name: Install GitHub CLI
         run: sudo apt-get install gh -y
 
@@ -149,6 +157,7 @@ jobs:
         uses: azure/setup-kubectl@v3
         with:
           version: "latest"
+
 
       # - name: Attach ACR to each AKS cluster
       #   run: |
