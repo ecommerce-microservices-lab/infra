@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: proxy-client-ingress
+  namespace: prod
+  annotations:
+    # Usar cert-manager para obtener certificado TLS
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Forzar redirección HTTP → HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Configurar HSTS (HTTP Strict Transport Security)
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/hsts-preload: "true"
+    # Security headers adicionales
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+  labels:
+    app: proxy-client
+    component: ingress
+    managed-by: terraform
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: app.santiesleo.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: proxy-client
+                port:
+                  number: 8900
+  tls:
+    - hosts:
+        - app.santiesleo.dev
+      secretName: proxy-client-tls-cert
+

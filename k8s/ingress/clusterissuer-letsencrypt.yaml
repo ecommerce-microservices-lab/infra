@@ -1,0 +1,38 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  namespace: cert-manager
+spec:
+  acme:
+    # URL del servidor de Let's Encrypt
+    # Para producción: https://acme-v02.api.letsencrypt.org/directory
+    # Para staging/testing: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: santiesleo17@gmail.com  # ⚠️ Cambiar por el email real del proyecto
+    # Almacenar la clave privada en un Secret
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    # Método de validación HTTP-01 (usando Ingress)
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+---
+# ClusterIssuer para staging/testing (opcional)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  namespace: cert-manager
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: santiesleo17@gmail.com  # ⚠️ Cambiar por el email real del proyecto
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+
