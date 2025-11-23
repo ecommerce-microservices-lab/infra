@@ -3,6 +3,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "node_pool_name" {
+  description = "Name of the node pool (optional, defaults to cluster_name-node-pool)"
+  type        = string
+  default     = ""
+}
+
 variable "region" {
   description = "GCP region"
   type        = string
@@ -54,7 +60,7 @@ variable "max_node_count" {
 variable "machine_type" {
   description = "Machine type for nodes"
   type        = string
-  default     = "e2-medium"
+  default     = "e2-standard-4"
 }
 
 variable "disk_size_gb" {

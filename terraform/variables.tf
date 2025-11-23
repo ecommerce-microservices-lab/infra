@@ -101,7 +101,7 @@ variable "gke_max_node_count" {
 variable "gke_machine_type" {
   description = "Machine type for GKE nodes"
   type        = string
-  default     = "e2-medium"
+  default     = "e2-standard-4"
 }
 
 variable "gke_disk_size_gb" {
@@ -120,4 +120,10 @@ variable "gke_node_service_account_email" {
   description = "Service account email for GKE nodes (leave empty to use default)"
   type        = string
   default     = ""
+}
+
+variable "gke_node_pool_name" {
+  description = "Name of the GKE node pool (optional, defaults to cluster_name-node-pool)"
+  type        = string
+  default     = "gke-prod-np-v2"  # Nombre del node pool actual en producción
 }
