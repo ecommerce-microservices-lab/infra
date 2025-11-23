@@ -47,5 +47,8 @@ provider "google" {
   region  = var.gcp_region
   
   # Usar credenciales desde archivo JSON
-  credentials = file(var.gcp_credentials_path != "" ? var.gcp_credentials_path : "${path.module}/../../.gcp-keys/gke-admin-key.json")
+  # Si no se proporcionan credenciales y el módulo GKE tiene count = 0,
+  # el provider no se usará, pero Terraform aún intentará inicializarlo.
+  # Si falla, el workflow fallará, lo cual es aceptable ya que solo se ejecuta manualmente.
+  credentials = var.gcp_credentials_path != "" ? file(var.gcp_credentials_path) : file("${path.module}/../../.gcp-keys/gke-admin-key.json")
 }

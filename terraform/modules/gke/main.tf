@@ -98,10 +98,12 @@ resource "google_container_cluster" "gke" {
 
 # Node Pool para el cluster
 resource "google_container_node_pool" "gke_nodes" {
-  name       = "${var.cluster_name}-node-pool"
-  location   = var.zone
-  cluster    = google_container_cluster.gke.name
-  node_count = var.node_count
+  name    = var.node_pool_name != "" ? var.node_pool_name : "${var.cluster_name}-node-pool"
+  location = var.zone
+  cluster  = google_container_cluster.gke.name
+  
+  # Cuando hay autoscaling, usar initial_node_count en lugar de node_count
+  initial_node_count = var.node_count
 
   management {
     auto_repair  = true
@@ -133,6 +135,18 @@ resource "google_container_node_pool" "gke_nodes" {
   autoscaling {
     min_node_count = var.min_node_count
     max_node_count = var.max_node_count
+  }
+
+  # Ignorar cambios en atributos que usan valores por defecto de GKE
+  # - initial_node_count: GKE maneja el node_count automáticamente con autoscaling
+  # - node_config[0].oauth_scopes: Usar los scopes por defecto de GKE (más seguros)
+  # - node_config[0].service_account: GKE usa "default" cuando es null
+  lifecycle {
+    ignore_changes = [
+      initial_node_count,
+      node_config[0].oauth_scopes,
+      node_config[0].service_account
+    ]
   }
 }
 
