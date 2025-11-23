@@ -24,8 +24,6 @@ spec:
         - name: acr-secret
       containers:
         - env:
-            - name: SPRING_CONFIG_IMPORT
-              value: optional:configserver:http://cloud-config:9296/
             - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
               value: http://service-discovery:8761/eureka/
             - name: EUREKA_INSTANCE_HOSTNAME
@@ -78,7 +76,7 @@ metadata:
   name: api-gateway
   namespace: prod
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - name: "8080"
       port: 8080
