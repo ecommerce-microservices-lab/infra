@@ -29,13 +29,53 @@ jobs:
       #     echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
       #     echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
 
+      - name: Set GCP Credentials (if available)
+        run: |
+          if [ -n "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]; then
+            echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/gcp-key.json
+            echo "✅ GCP credentials file created"
+          else
+            echo "⚠️  GCP credentials not configured, skipping..."
+          fi
+
       - name: Terraform Init
         working-directory: terraform/
         run: terraform init
 
       - name: Terraform Apply
         working-directory: terraform/
-        run: terraform apply -auto-approve -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" -var="client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" -var="client_id=${{ secrets.AZURE_CLIENT_ID }}"
+        run: |
+          # Determinar qué recursos aplicar basado en los secrets disponibles
+          if [ -n "${{ secrets.GCP_PROJECT_ID }}" ] && [ -f /tmp/gcp-key.json ] && [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "🟢 Aplicando todos los recursos (Azure + GCP)..."
+            terraform apply -auto-approve \
+              -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+              -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
+              -var="client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
+              -var="client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+              -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
+              -var="gcp_credentials_path=/tmp/gcp-key.json"
+          elif [ -n "${{ secrets.GCP_PROJECT_ID }}" ] && [ -f /tmp/gcp-key.json ]; then
+            echo "🔵 Aplicando solo recursos de GCP (Azure no configurado)..."
+            terraform apply -auto-approve \
+              -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
+              -var="gcp_credentials_path=/tmp/gcp-key.json" \
+              -target=module.gke_prod
+          elif [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "🔵 Aplicando solo recursos de Azure (GCP no configurado)..."
+            terraform apply -auto-approve \
+              -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+              -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
+              -var="client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
+              -var="client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+              -target=module.aks \
+              -target=azurerm_resource_group.microservices_rg \
+              -target=azurerm_container_registry.microservices_acr \
+              -target=random_id.acr_suffix
+          else
+            echo "❌ Error: No hay credenciales configuradas para Azure ni GCP"
+            exit 1
+          fi
 
       - name: Get Terraform Outputs
         id: tf_outputs

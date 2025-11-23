@@ -77,6 +77,8 @@ module "gke_prod" {
   region       = var.gcp_region
   zone         = var.gcp_zone
 
+  node_pool_name = var.gke_node_pool_name
+
   node_count = var.gke_node_count
   min_node_count = var.gke_min_node_count
   max_node_count = var.gke_max_node_count
