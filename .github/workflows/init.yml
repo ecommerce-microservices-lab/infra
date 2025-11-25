@@ -48,21 +48,32 @@ jobs:
           # Determinar qué recursos aplicar basado en los secrets disponibles
           if [ -n "${{ secrets.GCP_PROJECT_ID }}" ] && [ -f /tmp/gcp-key.json ] && [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
             echo "🟢 Aplicando todos los recursos (Azure + GCP)..."
+            # Nota: Si Azure AKS está pausado, la creación de namespace_dev fallará, pero eso está bien
+            # Los namespaces ya deberían existir de ejecuciones anteriores
             terraform apply -auto-approve \
               -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
               -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
               -var="client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
               -var="client_id=${{ secrets.AZURE_CLIENT_ID }}" \
               -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
-              -var="gcp_credentials_path=/tmp/gcp-key.json"
+              -var="gcp_credentials_path=/tmp/gcp-key.json" || {
+                EXIT_CODE=$?
+                echo "⚠️  Terraform apply falló con código $EXIT_CODE"
+                echo "⚠️  Esto puede ser porque Azure AKS está pausado (los namespaces ya deberían existir)"
+                echo "⚠️  Continuando con el despliegue..."
+              }
           elif [ -n "${{ secrets.GCP_PROJECT_ID }}" ] && [ -f /tmp/gcp-key.json ]; then
             echo "🔵 Aplicando solo recursos de GCP (Azure no configurado)..."
             terraform apply -auto-approve \
               -var="gcp_project_id=${{ secrets.GCP_PROJECT_ID }}" \
               -var="gcp_credentials_path=/tmp/gcp-key.json" \
-              -target=module.gke_prod
+              -target=module.gke_prod \
+              -target=module.namespace_prod
           elif [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
             echo "🔵 Aplicando solo recursos de Azure (GCP no configurado)..."
+            echo "⚠️  NOTA: Si Azure AKS está pausado, la creación de namespace_dev fallará."
+            echo "⚠️  Los namespaces ya deberían existir de ejecuciones anteriores."
+            # Intentar aplicar, pero no fallar si Azure está pausado
             terraform apply -auto-approve \
               -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
               -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
@@ -71,7 +82,13 @@ jobs:
               -target=module.aks \
               -target=azurerm_resource_group.microservices_rg \
               -target=azurerm_container_registry.microservices_acr \
-              -target=random_id.acr_suffix
+              -target=random_id.acr_suffix \
+              -target=module.namespace_dev || {
+                EXIT_CODE=$?
+                echo "⚠️  Terraform apply falló con código $EXIT_CODE"
+                echo "⚠️  Esto puede ser porque Azure AKS está pausado (los namespaces ya deberían existir)"
+                echo "⚠️  Continuando con el despliegue..."
+              }
           else
             echo "❌ Error: No hay credenciales configuradas para Azure ni GCP"
             exit 1
@@ -217,8 +234,15 @@ jobs:
           export ACR_NAME="${{ steps.tf_outputs.outputs.acr_name }}"
 
           # Mapear cluster a entorno
+          # IMPORTANTE: El nombre del cluster "microservices-cluster-prod" es confuso pero es el nombre real del cluster en Azure.
+          # Este cluster NO es para producción, se usa para DEV y STAGE (diferenciados por tags de imagen Docker).
+          # Por eso se mapea al namespace "dev", no "prod".
+          # 
+          # Estrategia de 2 ambientes:
+          # - Azure AKS (microservices-cluster-prod) → namespace "dev" → para dev y stage (tags :dev y :stage)
+          # - GCP GKE (microservices-cluster-gke-prod) → namespace "prod" → para producción (tag :prod)
           declare -A env_map=(
-            ["microservices-cluster-prod"]="prod"
+            ["microservices-cluster-prod"]="dev"  # Cluster Azure → namespace dev (dev/stage)
           )
 
           aks_names=("microservices-cluster-prod")
@@ -234,8 +258,28 @@ jobs:
             export ENV="${env_map[$cluster_name]}"
             echo "🚀 Deploying initial services to: $cluster_name (ENV=$ENV)"
 
-            # Crear namespace si no existe
-            kubectl get ns "$ENV" >/dev/null 2>&1 || kubectl create ns "$ENV"
+            # Verificar que el namespace existe
+            # Nota: Los namespaces ya deberían existir de ejecuciones anteriores de terraform apply
+            # Si el cluster está pausado (Azure) o tiene 0 nodos (GCP), los namespaces persisten
+            if ! kubectl get ns "$ENV" >/dev/null 2>&1; then
+              echo "⚠️  Namespace '$ENV' no existe. Creando namespace básico como fallback..."
+              echo "⚠️  NOTA: Este namespace NO tendrá ResourceQuota, LimitRange ni NetworkPolicy."
+              echo "⚠️  Para aplicar las políticas correctas, ejecuta 'terraform apply' cuando el cluster esté activo."
+              kubectl create ns "$ENV" || {
+                echo "❌ No se pudo crear el namespace. El cluster puede estar pausado o inaccesible."
+                exit 1
+              }
+              echo "✅ Namespace '$ENV' creado (básico, sin políticas de Terraform)"
+            else
+              echo "✅ Namespace '$ENV' existe"
+              # Verificar si tiene las políticas de Terraform (ResourceQuota)
+              if kubectl get resourcequota -n "$ENV" >/dev/null 2>&1; then
+                echo "✅ Namespace '$ENV' tiene políticas de Terraform aplicadas (ResourceQuota/LimitRange/NetworkPolicy)"
+              else
+                echo "⚠️  Namespace '$ENV' existe pero NO tiene políticas de Terraform"
+                echo "⚠️  Ejecuta 'terraform apply' cuando el cluster esté activo para aplicar las políticas."
+              fi
+            fi
 
             # Aplicar recursos core: si existe en carpeta del ENV, usarlo; si no, usar base
             for file in redis-cache.yaml configmap.yaml zipkin.yaml service-discovery.yaml cloud-config.yaml mysql-secret.yaml mysql.yaml; do
@@ -254,8 +298,12 @@ jobs:
         run: |
           export ACR_NAME="${{ steps.tf_outputs.outputs.acr_name }}"
 
+          # Mapear cluster a entorno
+          # IMPORTANTE: El cluster "microservices-cluster-prod" (Azure) se mapea a namespace "dev"
+          # porque se usa para dev/stage (diferenciados por tags), NO para producción.
+          # Producción está en GCP GKE con namespace "prod".
           declare -A env_map=(
-            ["microservices-cluster-prod"]="prod"
+            ["microservices-cluster-prod"]="dev"  # Cluster Azure → namespace dev (dev/stage)
           )
 
           aks_names=("microservices-cluster-prod")

@@ -1,3 +1,6 @@
+# Data source para obtener el token de autenticación
+data "google_client_config" "default" {}
+
 # VPC para GKE
 resource "google_compute_network" "gke_vpc" {
   name                    = "${var.cluster_name}-vpc"

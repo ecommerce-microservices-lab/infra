@@ -42,13 +42,15 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Provider de Google
+# Nota: Si no hay GCP configurado, el módulo gke_prod tiene count=0, así que no se usará
 provider "google" {
   project = var.gcp_project_id
   region  = var.gcp_region
   
-  # Usar credenciales desde archivo JSON
-  # Si no se proporcionan credenciales y el módulo GKE tiene count = 0,
-  # el provider no se usará, pero Terraform aún intentará inicializarlo.
-  # Si falla, el workflow fallará, lo cual es aceptable ya que solo se ejecuta manualmente.
-  credentials = var.gcp_credentials_path != "" ? file(var.gcp_credentials_path) : file("${path.module}/../../.gcp-keys/gke-admin-key.json")
+  # Usar credenciales desde archivo JSON si se proporciona
+  # Si no se proporciona, usar Application Default Credentials (ADC)
+  # IMPORTANTE: En el workflow de Actions siempre se pasa gcp_credentials_path=/tmp/gcp-key.json
+  # cuando hay GCP configurado, así que esto solo afecta ejecuciones locales sin GCP
+  credentials = var.gcp_credentials_path != "" ? file(var.gcp_credentials_path) : null
 }
