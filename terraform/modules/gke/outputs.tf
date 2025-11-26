@@ -40,3 +40,9 @@ output "subnet_name" {
   value       = google_compute_subnetwork.gke_subnet.name
 }
 
+output "cluster_token" {
+  description = "Token for authenticating with the GKE cluster"
+  value       = data.google_client_config.default.access_token
+  sensitive   = true
+}
+
