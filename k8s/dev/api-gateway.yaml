@@ -26,8 +26,6 @@ spec:
         - env:
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://cloud-config:9296/
-            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              value: http://service-discovery:8761/eureka/
             - name: EUREKA_INSTANCE_HOSTNAME
               value: api-gateway
           envFrom:
@@ -42,12 +40,12 @@ spec:
           resources:
             requests:
               memory: "128Mi"
-              cpu: "100m"
-              ephemeral-storage: "512Mi"
+              cpu: "50m"
+              ephemeral-storage: "256Mi"
             limits:
               memory: "512Mi"
-              cpu: "300m"
-              ephemeral-storage: "1Gi"
+              cpu: "200m"
+              ephemeral-storage: "512Mi"
           readinessProbe:
             httpGet:
               path: /actuator/health

@@ -26,15 +26,23 @@ spec:
         - env:
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://cloud-config:9296/
-            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              value: http://service-discovery:8761/eureka/
+            # H2 en memoria para dev
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:h2:mem:user_service_db;DB_CLOSE_DELAY=-1;MODE=MYSQL
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: org.h2.Driver
+            - name: SPRING_DATASOURCE_USERNAME
+              value: sa
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: ""
+            - name: SPRING_JPA_DATABASE_PLATFORM
+              value: org.hibernate.dialect.H2Dialect
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: validate
+            - name: SPRING_FLYWAY_ENABLED
+              value: "true"
             - name: EUREKA_INSTANCE_HOSTNAME
               value: user-service
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: mysql-root-password
           envFrom:
             - configMapRef:
                 name: common-environment-variables
