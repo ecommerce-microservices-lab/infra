@@ -23,8 +23,6 @@ spec:
         - env:
             - name: SPRING_CONFIG_IMPORT
               value: optional:configserver:http://cloud-config:9296/
-            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              value: http://service-discovery:8761/eureka/
             - name: EUREKA_INSTANCE_HOSTNAME
               value: proxy-client
           envFrom:
@@ -38,13 +36,13 @@ spec:
               protocol: TCP
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
-              ephemeral-storage: "768Mi"
+              memory: "192Mi"
+              cpu: "100m"
+              ephemeral-storage: "256Mi"
             limits:
               memory: "512Mi"
-              cpu: "500m"
-              ephemeral-storage: "1Gi"
+              cpu: "300m"
+              ephemeral-storage: "512Mi"
       restartPolicy: Always
 
 ---
