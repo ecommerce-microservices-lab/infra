@@ -101,11 +101,125 @@ module "gke_prod" {
   }
 }
 
+# Provider de Kubernetes para Azure AKS
 provider "kubernetes" {
-  host                   = module.aks.host
-  client_certificate     = base64decode(module.aks.client_certificate)
-  client_key             = base64decode(module.aks.client_key)
-  cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
+  alias                  = "aks"
+  host                   = module.aks["prod"].host
+  client_certificate     = base64decode(module.aks["prod"].client_certificate)
+  client_key             = base64decode(module.aks["prod"].client_key)
+  cluster_ca_certificate = base64decode(module.aks["prod"].cluster_ca_certificate)
+}
+
+# Data source para obtener token de GCP (debe estar antes del provider)
+data "google_client_config" "gke" {
+  count = var.gcp_project_id != "" ? 1 : 0
+}
+
+# Provider de Kubernetes para GCP GKE
+# IMPORTANTE: Este provider solo se usa cuando hay GCP configurado
+# El módulo namespace_prod tiene count=0 cuando no hay GCP, así que el provider no se usa
+# En el workflow de Actions siempre se pasa gcp_project_id cuando hay GCP configurado
+# Usamos try() para manejar el caso cuando el módulo aún no existe en el estado
+provider "kubernetes" {
+  alias                  = "gke"
+  host                   = try(module.gke_prod.cluster_endpoint, "")
+  token                  = var.gcp_project_id != "" ? try(data.google_client_config.gke[0].access_token, "") : ""
+  cluster_ca_certificate = try(base64decode(module.gke_prod.cluster_ca_certificate), "")
+}
+
+# Namespace 'dev' en Azure AKS
+# Nota: Este namespace maneja tanto 'dev' como 'stage' usando tags de imagen
+module "namespace_dev" {
+  source = "./modules/namespace"
+  providers = {
+    kubernetes = kubernetes.aks
+  }
+
+  namespace_name = "dev"
+  environment    = "dev"
+
+  labels = {
+    project = "microservices"
+    # Nota: Los labels de Kubernetes no pueden tener espacios ni paréntesis
+  }
+
+  # ResourceQuota más permisivo para desarrollo
+  enable_resource_quota = true
+  resource_quota_limits = {
+    "requests.cpu"    = "8"
+    "requests.memory" = "16Gi"
+    "limits.cpu"      = "16"
+    "limits.memory"   = "32Gi"
+    "pods"            = "100"
+  }
+
+  # LimitRange para desarrollo
+  enable_limit_range = true
+  default_limits = {
+    cpu    = "1"
+    memory = "1Gi"
+  }
+  default_requests = {
+    cpu    = "100m"
+    memory = "128Mi"
+  }
+  max_limits = {
+    cpu    = "4"
+    memory = "4Gi"
+  }
+
+  # NetworkPolicy: permitir comunicación con otros namespaces
+  enable_network_policy = true
+  allowed_ingress_namespaces = []
+  allowed_egress_namespaces   = []
+}
+
+# Namespace 'prod' en GCP GKE
+module "namespace_prod" {
+  source = "./modules/namespace"
+  providers = {
+    kubernetes = kubernetes.gke
+  }
+
+  count = var.gcp_project_id != "" ? 1 : 0
+
+  namespace_name = "prod"
+  environment    = "prod"
+
+  labels = {
+    project = "microservices"
+    # Nota: Los labels de Kubernetes no pueden tener espacios ni paréntesis
+  }
+
+  # ResourceQuota más estricto para producción
+  enable_resource_quota = true
+  resource_quota_limits = {
+    "requests.cpu"    = "16"
+    "requests.memory" = "32Gi"
+    "limits.cpu"      = "32"
+    "limits.memory"   = "64Gi"
+    "pods"            = "200"
+  }
+
+  # LimitRange para producción
+  enable_limit_range = true
+  default_limits = {
+    cpu    = "2"
+    memory = "2Gi"
+  }
+  default_requests = {
+    cpu    = "200m"
+    memory = "256Mi"
+  }
+  max_limits = {
+    cpu    = "8"
+    memory = "8Gi"
+  }
+
+  # NetworkPolicy más restrictivo para producción
+  enable_network_policy = true
+  allowed_ingress_namespaces = []
+  allowed_egress_namespaces   = []
 }
 
 # Backend remoto en S3 (descomentar después de crear el bucket)

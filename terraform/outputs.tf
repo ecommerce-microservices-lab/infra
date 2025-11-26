@@ -73,32 +73,43 @@ output "acr_admin_password" {
 # Outputs GKE
 output "gke_cluster_name" {
   description = "Name of the GKE cluster"
-  value       = module.gke_prod.cluster_name
+  value       = var.gcp_project_id != "" ? module.gke_prod.cluster_name : null
 }
 
 output "gke_cluster_endpoint" {
   description = "Endpoint for the GKE cluster"
-  value       = module.gke_prod.cluster_endpoint
+  value       = var.gcp_project_id != "" ? module.gke_prod.cluster_endpoint : null
   sensitive   = true
 }
 
 output "gke_cluster_ca_certificate" {
   description = "Base64 encoded public certificate for the GKE cluster"
-  value       = module.gke_prod.cluster_ca_certificate
+  value       = var.gcp_project_id != "" ? module.gke_prod.cluster_ca_certificate : null
   sensitive   = true
 }
 
 output "gke_cluster_location" {
   description = "Location of the GKE cluster"
-  value       = module.gke_prod.cluster_location
+  value       = var.gcp_project_id != "" ? module.gke_prod.cluster_location : null
 }
 
 output "gke_vpc_name" {
   description = "Name of the VPC"
-  value       = module.gke_prod.vpc_name
+  value       = var.gcp_project_id != "" ? module.gke_prod.vpc_name : null
 }
 
 output "gke_subnet_name" {
   description = "Name of the subnet"
   value       = module.gke_prod.subnet_name
+}
+
+# Outputs de Namespaces
+output "namespace_dev_name" {
+  description = "Name of the dev namespace in Azure AKS"
+  value       = module.namespace_dev.namespace_name
+}
+
+output "namespace_prod_name" {
+  description = "Name of the prod namespace in GCP GKE"
+  value       = var.gcp_project_id != "" ? module.namespace_prod[0].namespace_name : null
 }

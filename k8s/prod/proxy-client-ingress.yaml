@@ -21,7 +21,7 @@ metadata:
       more_set_headers "X-XSS-Protection: 1; mode=block";
       more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
   labels:
-    app: proxy-client
+    app: frontend
     component: ingress
     managed-by: terraform
 spec:
@@ -34,9 +34,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: proxy-client
+                name: frontend
                 port:
-                  number: 8900
+                  number: 80
   tls:
     - hosts:
         - app.santiesleo.dev
