@@ -17,7 +17,7 @@ data:
   EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "10"
   EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
   SPRING_PROFILES_ACTIVE: prod
-  SPRING_ZIPKIN_BASE_URL: "http://zipkin:9411"
+  SPRING_ZIPKIN_BASE_URL: "http://zipkin.monitoring.svc.cluster.local:9411"
   SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-service:3306/ecommerce_prod_db"
   SPRING_DATASOURCE_USERNAME: "root"
 
