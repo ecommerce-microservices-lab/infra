@@ -10,10 +10,9 @@ data:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://prometheus.monitoring.svc.cluster.local:9090
+        url: http://prometheus:9090
         isDefault: true
         editable: true
-        uid: prometheus
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -94,3 +93,4 @@ spec:
     - name: grafana
       port: 3000
       targetPort: 3000
+
