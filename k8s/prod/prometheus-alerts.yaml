@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alerts
+  namespace: monitoring
+data:
+  alerts.yml: |
+    groups:
+      - name: microservices_alerts
+        interval: 30s
+        rules:
+          # API Gateway Alerts
+          - alert: APIGatewayHighErrorRate
+            expr: rate(http_server_requests_seconds_count{service="api-gateway",status=~"5.."}[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+              service: api-gateway
+            annotations:
+              summary: "API Gateway high error rate"
+              description: "API Gateway error rate is above 10% for 5 minutes"
+
+          - alert: APIGatewayHighLatency
+            expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{service="api-gateway"}[5m])) > 2
+            for: 5m
+            labels:
+              severity: warning
+              service: api-gateway
+            annotations:
+              summary: "API Gateway high latency"
+              description: "API Gateway p95 latency is above 2 seconds"
+
+          # Order Service Alerts
+          - alert: OrderServiceHighErrorRate
+            expr: rate(http_server_requests_seconds_count{service="order-service",status=~"5.."}[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+              service: order-service
+            annotations:
+              summary: "Order Service high error rate"
+              description: "Order Service error rate is above 10% for 5 minutes"
+
+          - alert: OrderServiceCircuitBreakerOpen
+            expr: resilience4j_circuitbreaker_state{service="order-service",state="OPEN"} == 1
+            for: 1m
+            labels:
+              severity: critical
+              service: order-service
+            annotations:
+              summary: "Order Service circuit breaker is OPEN"
+              description: "Circuit breaker for Order Service has been open for 1 minute"
+
+          # Payment Service Alerts
+          - alert: PaymentServiceHighErrorRate
+            expr: rate(http_server_requests_seconds_count{service="payment-service",status=~"5.."}[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+              service: payment-service
+            annotations:
+              summary: "Payment Service high error rate"
+              description: "Payment Service error rate is above 10% for 5 minutes"
+
+          - alert: PaymentServiceCircuitBreakerOpen
+            expr: resilience4j_circuitbreaker_state{service="payment-service",state="OPEN"} == 1
+            for: 1m
+            labels:
+              severity: critical
+              service: payment-service
+            annotations:
+              summary: "Payment Service circuit breaker is OPEN"
+              description: "Circuit breaker for Payment Service has been open for 1 minute"
+
+          # User Service Alerts
+          - alert: UserServiceHighErrorRate
+            expr: rate(http_server_requests_seconds_count{service="user-service",status=~"5.."}[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+              service: user-service
+            annotations:
+              summary: "User Service high error rate"
+              description: "User Service error rate is above 10% for 5 minutes"
+
+          # Product Service Alerts
+          - alert: ProductServiceHighErrorRate
+            expr: rate(http_server_requests_seconds_count{service="product-service",status=~"5.."}[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+              service: product-service
+            annotations:
+              summary: "Product Service high error rate"
+              description: "Product Service error rate is above 10% for 5 minutes"
+
+          # Infrastructure Alerts
+          - alert: HighMemoryUsage
+            expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage"
+              description: "Memory usage is above 90% for service {{ $labels.service }}"
+
+          - alert: HighCPUUsage
+            expr: process_cpu_usage > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage"
+              description: "CPU usage is above 80% for service {{ $labels.service }}"
+
+          - alert: PodRestarting
+            expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod restarting"
+              description: "Pod {{ $labels.pod }} is restarting frequently"
+

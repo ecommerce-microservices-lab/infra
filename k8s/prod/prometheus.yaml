@@ -192,3 +192,4 @@ spec:
     - name: web
       port: 9090
       targetPort: 9090
+

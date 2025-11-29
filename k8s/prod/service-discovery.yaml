@@ -9,7 +9,7 @@ metadata:
   name: service-discovery
   namespace: prod
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       io.kompose.service: service-discovery
@@ -44,11 +44,11 @@ spec:
             requests:
               memory: "256Mi"
               cpu: "250m"
-              ephemeral-storage: "512Mi"
+              ephemeral-storage: "256Mi"
             limits:
               memory: "512Mi"
               cpu: "500m"
-              ephemeral-storage: "1Gi"
+              ephemeral-storage: "512Mi"
           readinessProbe:
             httpGet:
               path: /actuator/health
