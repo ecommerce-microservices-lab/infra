@@ -1,0 +1,61 @@
+---
+# ScaledObject para api-gateway
+# Trigger: HTTP (basado en métricas de Prometheus - request rate)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: api-gateway-scaler
+  namespace: prod
+spec:
+  scaleTargetRef:
+    name: api-gateway
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: http_requests_per_second
+        threshold: '2'  # Escalar cuando request rate > 2 req/s
+        query: sum(rate(http_server_requests_seconds_count{service="api-gateway"}[1m]))
+---
+# ScaledObject para order-service
+# Trigger: Prometheus (basado en uso de CPU desde métricas de Prometheus)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: order-service-scaler
+  namespace: prod
+spec:
+  scaleTargetRef:
+    name: order-service
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: cpu_usage_percentage
+        threshold: '70'  # Escalar cuando CPU > 70% (0.70 como ratio)
+        query: avg(process_cpu_usage{namespace="prod", service="order-service"}) * 100
+---
+# ScaledObject para payment-service
+# Trigger: Prometheus (basado en métricas de negocio - completed_payments_total)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: payment-service-scaler
+  namespace: prod
+spec:
+  scaleTargetRef:
+    name: payment-service
+  minReplicaCount: 1
+  maxReplicaCount: 3
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: payment_rate
+        threshold: '0.5'  # Escalar cuando tasa de pagos > 0.5 por minuto
+        query: rate(completed_payments_total{service="payment-service"}[1m])
+
