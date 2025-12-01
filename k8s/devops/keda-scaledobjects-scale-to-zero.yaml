@@ -1,0 +1,41 @@
+---
+# ScaledObject para favourite-service - Scale to Zero
+# Servicio no crítico que puede escalar a 0 cuando no hay tráfico
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: favourite-service-scaler
+  namespace: prod
+spec:
+  scaleTargetRef:
+    name: favourite-service
+  minReplicaCount: 0  # Permite escalar a 0 réplicas
+  maxReplicaCount: 3
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: http_requests_per_second
+        threshold: '0.1'  # Escalar cuando request rate > 0.1 req/s
+        query: sum(rate(http_server_requests_seconds_count{service="favourite-service"}[1m]))
+---
+# ScaledObject para shipping-service - Scale to Zero
+# Servicio no crítico que puede escalar a 0 cuando no hay tráfico
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: shipping-service-scaler
+  namespace: prod
+spec:
+  scaleTargetRef:
+    name: shipping-service
+  minReplicaCount: 0  # Permite escalar a 0 réplicas
+  maxReplicaCount: 3
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: http_requests_per_second
+        threshold: '0.1'  # Escalar cuando request rate > 0.1 req/s
+        query: sum(rate(http_server_requests_seconds_count{service="shipping-service"}[1m]))
+
