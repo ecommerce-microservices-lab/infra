@@ -20,4 +20,11 @@ data:
   SPRING_ZIPKIN_BASE_URL: "http://zipkin.monitoring.svc.cluster.local:9411"
   SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-service:3306/ecommerce_prod_db"
   SPRING_DATASOURCE_USERNAME: "root"
+  # CORS Configuration (solo para producción - frontend en app.santiesleo.dev)
+  CORS_ALLOWED_ORIGINS: "https://app.santiesleo.dev"
+  CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+  CORS_ALLOW_CREDENTIALS: "true"
+  CORS_ALLOWED_HEADERS: "*"
+  CORS_EXPOSED_HEADERS: ""
+  CORS_MAX_AGE: "3600"
 
