@@ -93,11 +93,19 @@ module "gke_prod" {
     environment = "prod"
     project     = "microservices"
     managed-by  = "terraform"
+    # FinOps labels
+    env         = "prod"
+    owner       = "devops-team"
+    cost-center = "engineering"
   }
 
   node_labels = {
     environment = "prod"
     project     = "microservices"
+    # FinOps labels
+    env         = "prod"
+    owner       = "devops-team"
+    cost-center = "engineering"
   }
 }
 
@@ -140,6 +148,10 @@ module "namespace_dev" {
 
   labels = {
     project = "microservices"
+    # FinOps labels
+    env         = "dev"
+    owner       = "devops-team"
+    cost-center = "engineering"
     # Nota: Los labels de Kubernetes no pueden tener espacios ni paréntesis
   }
 
@@ -188,6 +200,10 @@ module "namespace_prod" {
 
   labels = {
     project = "microservices"
+    # FinOps labels
+    env         = "dev"
+    owner       = "devops-team"
+    cost-center = "engineering"
     # Nota: Los labels de Kubernetes no pueden tener espacios ni paréntesis
   }
 
