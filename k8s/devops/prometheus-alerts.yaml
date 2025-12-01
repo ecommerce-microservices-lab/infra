@@ -10,15 +10,16 @@ data:
         interval: 30s
         rules:
           # API Gateway Alerts
+          # Excluye errores de servicios escalados a 0 (shipping-service, favourite-service)
           - alert: APIGatewayHighErrorRate
-            expr: rate(http_server_requests_seconds_count{service="api-gateway",status=~"5.."}[5m]) > 0.1
+            expr: (rate(http_server_requests_seconds_count{service="api-gateway",status=~"5..",uri!~".*shipping-service.*|.*favourite-service.*"}[5m]) / rate(http_server_requests_seconds_count{service="api-gateway",uri!~".*shipping-service.*|.*favourite-service.*"}[5m])) > 0.1
             for: 5m
             labels:
               severity: critical
               service: api-gateway
             annotations:
               summary: "API Gateway high error rate"
-              description: "API Gateway error rate is above 10% for 5 minutes"
+              description: "API Gateway error rate is above 10% for 5 minutes (excluding scale-to-zero services)"
 
           - alert: APIGatewayHighLatency
             expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{service="api-gateway"}[5m])) > 2
